@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import pickle
 from pathlib import Path
-from models.centroids import FuzzyCMeansClustering, KMeansClustering
+from models.clustering import FuzzyCMeansClustering, KMeansClustering
 
 def cluster_to_pkl(
     vectors: np.ndarray,
