@@ -1,0 +1,70 @@
+[
+  {
+    "link": "https://example.com/post/12345",
+    "title": "New Product Launch by ExampleCorp!",
+    "author": "ExampleUser",
+    "likes": 1340,
+    "comment_count": 5,
+    "comments": [
+      {
+        "user": "user_1",
+        "text": "Absolutely love this new product! Well done!",
+        "timestamp": "2025-10-18T14:32:00Z"
+      },
+      {
+        "user": "user_2",
+        "text": "Not sure if it’s worth the price though.",
+        "timestamp": "2025-10-18T15:12:00Z"
+      },
+      {
+        "user": "user_3",
+        "text": "I think it’s okay, nothing special.",
+        "timestamp": "2025-10-18T16:04:00Z"
+      },
+      {
+        "user": "user_4",
+        "text": "This is terrible! Completely disappointed.",
+        "timestamp": "2025-10-18T17:25:00Z"
+      },
+      {
+        "user": "user_5",
+        "text": "Looks promising, hope it performs well!",
+        "timestamp": "2025-10-18T17:55:00Z"
+      }
+    ],
+    "metadata": {
+      "platform": "ExampleSocial",
+      "posted_at": "2025-10-18T12:00:00Z",
+      "tags": ["product", "launch", "tech"]
+    }
+  },
+  {
+    "link": "https://example.com/post/67890",
+    "title": "Community Event Recap",
+    "author": "CommunityOrg",
+    "likes": 540,
+    "comment_count": 3,
+    "comments": [
+      {
+        "user": "user_a",
+        "text": "Great event, loved the energy!",
+        "timestamp": "2025-10-17T10:45:00Z"
+      },
+      {
+        "user": "user_b",
+        "text": "Too crowded for my taste.",
+        "timestamp": "2025-10-17T11:10:00Z"
+      },
+      {
+        "user": "user_c",
+        "text": "It was fine, average experience overall.",
+        "timestamp": "2025-10-17T12:02:00Z"
+      }
+    ],
+    "metadata": {
+      "platform": "ExampleSocial",
+      "posted_at": "2025-10-17T09:00:00Z",
+      "tags": ["community", "event", "recap"]
+    }
+  }
+]

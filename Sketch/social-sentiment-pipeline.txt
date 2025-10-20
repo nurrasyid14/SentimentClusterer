@@ -1,0 +1,67 @@
+social-sentiment-pipeline/
+│
+├── 📁 data/
+│   ├── raw/
+│   │   ├── post_01.json             [auto]
+│   │   ├── post_02.json             [auto]
+│   │   └── ...
+│   │
+│   ├── processed/
+│   │   ├── tokens.pkl               [auto]
+│   │   └── parsed_comments.pkl      [auto]
+│   │
+│   ├── embeddings.pkl               [auto]   ← from embeddings_builder
+│   ├── cluster_results.pkl          [auto]   ← from cluster_to_pkl.py
+│   ├── sentiment_summary.csv        [auto]   ← ready for Streamlit
+│   └── logs/
+│       └── pipeline.log             [auto]
+│
+│
+├── 📁 models/
+│   ├── centroids.py                 <todo>
+│   ├── vectorizer.py                <todo>
+│   ├── sentiment_mapper.py          <todo>
+│   ├── embeddings_builder.py        <todo>
+│   └── stopwords/
+│       ├── stopwords_en.txt         <todo>
+│       └── stopwords_id.txt         <todo>
+│
+│
+├── 📁 pipeline/
+│   ├── scraper.py                   <todo>
+│   ├── parser.py                    <todo>
+│   ├── preprocess.py                <todo>
+│   ├── cluster_to_pkl.py            <todo>
+│   ├── main.py                      <todo>
+│   └── utils.py                     <todo>
+│
+│
+├── 📁 app/                          ← Streamlit dashboard layer
+│   ├── Home.py                      <todo>   ← overview, run pipeline buttons
+│   ├── Data_Explorer.py             <todo>   ← browse raw/processed data
+│   ├── Sentiment_Analyzer.py        <todo>   ← show sentiment_summary.csv + charts
+│   ├── Cluster_Visualizer.py        <todo>   ← scatter/heatmap/violin from Visualizer
+│   ├── Settings.py                  <todo>   ← configure model type, cluster k, etc.
+│   └── utils/
+│       └── ui_helpers.py            <todo>   ← Streamlit UI utilities
+│
+│
+├── 📁 visualization/
+│   ├── visualizer.py                <todo>
+│   └── report_generator.py          <todo>
+│
+│
+├── 📁 docs/
+│   ├── README.md                    <todo>   ← main documentation (Dave)
+│   ├── pipeline_flowchart.md        <todo>   ← pipeline + data flow (Mermaid)
+│   └── team_roles.md                <todo>   ← task allocations
+│
+│
+├── .streamlit/
+│   └── config.toml                  <todo>   ← theme / layout config
+│
+├── .env
+├── .gitignore                       <todo>
+├── requirements.txt                 <todo>
+├── LICENSE                          <todo>
+└── README.md                        <todo>
