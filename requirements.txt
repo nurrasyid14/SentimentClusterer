@@ -9,6 +9,7 @@ kmodes
 nltk
 spacy
 gensim
+deepl
 
 # Web Scraping
 requests

@@ -1,73 +1,78 @@
-# centroids.py
+# models/clustering.py
 """
-Centroid-based clustering wrappers: KMeans, Fuzzy C-Means (skfuzzy), KModes (optional).
-Provides a small, consistent API around popular clustering algorithms with type hints,
-robust input handling, and small performance improvements.
+Modular clustering models for sentiment pipeline:
+Includes KMeans, Fuzzy C-Means (scikit-fuzzy), and KModes (optional).
+Provides a unified, sklearn-like interface for integration into pipelines.
 """
-from __future__ import annotations
 
+from __future__ import annotations
 import logging
 from typing import Optional
-
 import numpy as np
 from sklearn.cluster import KMeans
 
+# --- Optional Dependencies ---
 try:
     from skfuzzy.cluster import cmeans
     from skfuzzy import cmeans_predict
     _HAS_SKFUZZY = True
-except Exception:  # pragma: no cover - optional dependency
+except Exception:
     _HAS_SKFUZZY = False
 
 try:
     from kmodes.kmodes import KModes
     _HAS_KMODES = True
-except Exception:  # pragma: no cover - optional dependency
+except Exception:
     _HAS_KMODES = False
 
-
+# --- Logging Setup ---
 logger = logging.getLogger(__name__)
+if not logger.handlers:
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
+# ====================================================================
+# KMEANS CLUSTERING
+# ====================================================================
 
 class KMeansClustering:
-    """Light wrapper around sklearn.cluster.KMeans with a consistent interface.
-
-    Methods
-    -------
-    fit(X) -> self
-    predict(X) -> np.ndarray
-    get_centroids() -> np.ndarray
-    """
+    """Light wrapper around sklearn.cluster.KMeans."""
 
     def __init__(self, n_clusters: int = 3, random_state: int = 42, **kwargs):
         self.n_clusters = int(n_clusters)
         self.random_state = int(random_state)
         self.model = KMeans(n_clusters=self.n_clusters, random_state=self.random_state, **kwargs)
         self._is_fitted = False
-        logger.debug("KMeans initialized: %s", {"n_clusters": self.n_clusters})
+        logger.debug(f"KMeans initialized with {self.n_clusters} clusters.")
 
     def fit(self, X: np.ndarray) -> "KMeansClustering":
         X = np.asarray(X)
         self.model.fit(X)
         self._is_fitted = True
-        self._X_train = X
-        logger.info("KMeans fitted on %d samples", X.shape[0])
+        logger.info(f"KMeans fitted on {X.shape[0]} samples.")
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        X = np.asarray(X)
         if not self._is_fitted:
-            raise ValueError("KMeansClustering: call fit(...) before predict(...)")
-        return self.model.predict(X)
+            raise ValueError("KMeansClustering: call fit(...) before predict(...).")
+        return self.model.predict(np.asarray(X))
+
+    def fit_predict(self, X: np.ndarray) -> np.ndarray:
+        self.fit(X)
+        return self.predict(X)
 
     def get_centroids(self) -> np.ndarray:
         if not self._is_fitted:
-            raise ValueError("KMeansClustering: call fit(...) before get_centroids(...)")
+            raise ValueError("KMeansClustering: call fit(...) before get_centroids(...).")
         return self.model.cluster_centers_
 
 
+# ====================================================================
+# FUZZY C-MEANS CLUSTERING
+# ====================================================================
+
 class FuzzyCMeansClustering:
-    """Wrapper around skfuzzy c-means. Optional dependency."""
+    """Wrapper around scikit-fuzzy c-means. Optional dependency."""
 
     def __init__(
         self,
@@ -94,13 +99,11 @@ class FuzzyCMeansClustering:
         self._is_fitted = False
 
     def fit(self, X: np.ndarray) -> "FuzzyCMeansClustering":
-        """Fit fuzzy c-means on data."""
         X = np.asarray(X, dtype=float)
         if X.ndim == 1:
             X = X.reshape(-1, 1)
 
-        # scikit-fuzzy returns between 5 and 7 values depending on version
-        result = cmeans(
+        cntr, u, _, _, _, _, _ = cmeans(
             X.T,
             c=self.n_clusters,
             m=self.m,
@@ -109,25 +112,21 @@ class FuzzyCMeansClustering:
             seed=self.seed,
         )
 
-        # Unpack flexibly
-        cntr, u = result[0], result[1]
-
         self.centroids = np.asarray(cntr)
         self.u = np.asarray(u)
         self._is_fitted = True
+        logger.info(f"Fuzzy C-Means fitted on {X.shape[0]} samples.")
         return self
 
-
     def predict(self, X: np.ndarray) -> np.ndarray:
-        """Predict cluster memberships for new data."""
         if not self._is_fitted:
-            raise ValueError("FuzzyCMeansClustering: call fit(...) before predict(...)")
+            raise ValueError("FuzzyCMeansClustering: call fit(...) before predict(...).")
 
         X = np.asarray(X, dtype=float)
         if X.ndim == 1:
             X = X.reshape(-1, 1)
 
-        result = cmeans_predict(
+        u_pred, _, _, _, _, _ = cmeans_predict(
             X.T,
             self.centroids,
             m=self.m,
@@ -135,42 +134,80 @@ class FuzzyCMeansClustering:
             maxiter=self.maxiter,
         )
 
-        # Handle variable length again
-        u_pred = result[0]
-
         labels = np.argmax(u_pred, axis=0)
         return labels
 
+    def fit_predict(self, X: np.ndarray) -> np.ndarray:
+        self.fit(X)
+        return self.predict(X)
+
+    def get_centroids(self) -> np.ndarray:
+        if not self._is_fitted:
+            raise ValueError("FuzzyCMeansClustering: call fit(...) before get_centroids(...).")
+        return self.centroids
 
 
+# ====================================================================
+# KMODES CLUSTERING
+# ====================================================================
 
 class KModesClustering:
-    """Light wrapper around kmodes.KModes. Optional dependency.
-
-    Uses the KModes implementation when available.
-    """
+    """Wrapper around kmodes.KModes. Optional dependency."""
 
     def __init__(self, n_clusters: int = 3, init: str = "Huang", n_init: int = 5, random_state: Optional[int] = 42, verbose: int = 0):
         if not _HAS_KMODES:
             raise ImportError("kmodes is required for KModesClustering. Install with `pip install kmodes`.")
         self.n_clusters = int(n_clusters)
-        self.model = KModes(n_clusters=self.n_clusters, init=init, n_init=n_init, random_state=random_state, verbose=verbose)
+        self.model = KModes(
+            n_clusters=self.n_clusters,
+            init=init,
+            n_init=n_init,
+            random_state=random_state,
+            verbose=verbose,
+        )
         self._is_fitted = False
 
     def fit(self, X: np.ndarray) -> "KModesClustering":
         self.model.fit(X)
         self._is_fitted = True
+        logger.info(f"KModes fitted on {X.shape[0]} samples.")
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         if not self._is_fitted:
-            raise ValueError("KModesClustering: call fit(...) before predict(...)")
+            raise ValueError("KModesClustering: call fit(...) before predict(...).")
         return self.model.predict(X)
+
+    def fit_predict(self, X: np.ndarray) -> np.ndarray:
+        self.fit(X)
+        return self.predict(X)
 
     def get_centroids(self) -> np.ndarray:
         if not self._is_fitted:
-            raise ValueError("KModesClustering: not fitted")
+            raise ValueError("KModesClustering: not fitted.")
         return np.asarray(self.model.cluster_centroids_)
 
 
-__all__ = ["KMeansClustering", "FuzzyCMeansClustering", "KModesClustering"]
+# ====================================================================
+# FACTORY FUNCTION
+# ====================================================================
+
+def create_clustering_model(method: str = "kmeans", **kwargs):
+    """Factory for selecting clustering method dynamically."""
+    method = method.lower()
+    if method == "kmeans":
+        return KMeansClustering(**kwargs)
+    elif method in {"fuzzy", "cmeans"}:
+        return FuzzyCMeansClustering(**kwargs)
+    elif method == "kmodes":
+        return KModesClustering(**kwargs)
+    else:
+        raise ValueError(f"Unknown clustering method: {method}")
+
+
+__all__ = [
+    "KMeansClustering",
+    "FuzzyCMeansClustering",
+    "KModesClustering",
+    "create_clustering_model",
+]
