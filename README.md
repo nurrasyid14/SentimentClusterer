@@ -126,12 +126,12 @@ Aplikasi **analisis sentimen dan klasterisasi teks** berbasis **Streamlit**, yan
 https://sentimentclusterer7.streamlit.app/
 
 📊 Contoh Tampilan
-Dashboard Utama: Upload JSON dan pilih metode klasterisasi
+### Dashboard Utama: Upload JSON dan pilih metode klasterisasi
 
-Visualisasi Pie Chart: Distribusi cluster berdasarkan hasil sentimen
+### Visualisasi Pie Chart: Distribusi cluster berdasarkan hasil sentimen
 
-Scatter Plot: Sebaran komentar dalam ruang vektor
-### 🧭 Interpretasi Kuadran pada Scatter Plot
+### Scatter Plot: Sebaran komentar dalam ruang vektor
+#### 🧭 Interpretasi Kuadran pada Scatter Plot
 
 | Kuadran                        | Posisi Titik | Interpretasi Umum                                                     | Kemungkinan Arti dalam Konteks Sentimen                                                                                |
 | ------------------------------ | ------------ | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -141,5 +141,5 @@ Scatter Plot: Sebaran komentar dalam ruang vektor
 | *Kuadran IV (x > 0, y < 0)*  | kanan–bawah  | Dimensi pertama positif tapi kedua negatif                            | 🟠 *Ambigu atau netral cenderung negatif*, misalnya sindiran halus atau ekspresi kecewa yang tidak frontal.          |
 
 
-Tabel Hasil: Menampilkan teks beserta cluster dan label sentimennya
+### Tabel Hasil: Menampilkan teks beserta cluster dan label sentimennya
 
