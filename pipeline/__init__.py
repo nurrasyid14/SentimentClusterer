@@ -6,6 +6,12 @@ Pipeline module — handles sequential processing:
 4. Building embeddings
 5. Clustering results
 """
-from .parser import parse_raw_json
+from parser import parse_json
 from .preprocess import run_preprocess
 # translator & utils akan dipanggil langsung oleh main pipeline
+
+__all__ = [
+    "parse_json",
+    "run_preprocess",
+
+]

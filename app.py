@@ -8,7 +8,7 @@ import joblib
 from pathlib import Path
 
 # Import modul internal
-from pipeline.parser import parse_raw_json
+from pipeline.parser import parse_json 
 from pipeline.preprocess import run_preprocess
 from models.clustering import FuzzyCMeansClustering, KMeansClustering
 from models.sentiment_mapper import SentimentEngine
