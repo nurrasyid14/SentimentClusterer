@@ -131,6 +131,15 @@ Dashboard Utama: Upload JSON dan pilih metode klasterisasi
 Visualisasi Pie Chart: Distribusi cluster berdasarkan hasil sentimen
 
 Scatter Plot: Sebaran komentar dalam ruang vektor
+### 🧭 Interpretasi Kuadran pada Scatter Plot
+
+| Kuadran                        | Posisi Titik | Interpretasi Umum                                                     | Kemungkinan Arti dalam Konteks Sentimen                                                                                |
+| ------------------------------ | ------------ | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| *Kuadran I (x > 0, y > 0)*   | kanan–atas   | Nilai positif di kedua dimensi (misalnya optimisme + semangat tinggi) | 🟢 *Sentimen positif yang kuat*, misalnya komentar yang penuh dukungan atau pujian.                                  |
+| *Kuadran II (x < 0, y > 0)*  | kiri–atas    | Dimensi pertama negatif tapi dimensi kedua positif (konflik makna)    | 🟡 *Netral cenderung positif*, bisa berupa komentar yang mengandung kritik tapi tetap sopan atau mendukung sebagian. |
+| *Kuadran III (x < 0, y < 0)* | kiri–bawah   | Kedua dimensi negatif                                                 | 🔴 *Sentimen negatif kuat*, seperti komentar sinis, marah, atau kecewa.                                              |
+| *Kuadran IV (x > 0, y < 0)*  | kanan–bawah  | Dimensi pertama positif tapi kedua negatif                            | 🟠 *Ambigu atau netral cenderung negatif*, misalnya sindiran halus atau ekspresi kecewa yang tidak frontal.          |
+
 
 Tabel Hasil: Menampilkan teks beserta cluster dan label sentimennya
 
