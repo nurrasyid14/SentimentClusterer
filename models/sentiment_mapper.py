@@ -73,15 +73,18 @@ class SentimentEngine:
 
     def prepare_and_train(self, texts: List[str], labels: List[int]):
         """Train embedding + classifier on a batch of texts and labels (0,1,2)."""
-        if not texts or not labels:
-            raise ValueError("❌ Cannot train SentimentEngine: texts or labels are empty.")
+        if texts is None or len(texts) == 0:
+            raise ValueError("❌ Cannot train SentimentEngine: texts are empty.")
+        if labels is None or len(labels) == 0:
+            raise ValueError("❌ Cannot train SentimentEngine: labels are empty.")
         if len(texts) != len(labels):
-            raise ValueError("❌ Length mismatch: texts and labels must be same length.")
+            raise ValueError("❌ Length mismatch: texts and labels must have same length.")
 
         self.embedding_model.fit(texts)
         X_emb = self.embedding_model.transform(texts)
         self.classifier_model.fit(X_emb, labels)
         self.is_fitted = True
+
 
     def predict(self, texts: List[str]) -> List[int]:
         """Predict sentiment labels (0,1,2) for a batch of texts."""
