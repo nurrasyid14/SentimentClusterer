@@ -1,95 +1,67 @@
-#  pipeline/parser.py
-
 import json
 import joblib
 import logging
 from pathlib import Path
 from typing import List, Union
 
-# ------------------------------------------------------------
-# Logging Configuration
-# ------------------------------------------------------------
+# Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-# ============================================================
-#  JSON Parsing Function
-# ============================================================
+TEXT_KEYS = ["full_text", "text", "content", "comment", "body", "message"]
 
-def parse_raw_json(raw_dir: Union[str, Path], comment_key: str = "comment_text") -> List[str]:
+def parse_json(input_json_path: str, output_pkl_path: str = "data/processed/parsed_comments.pkl") -> List[str]:
     """
-    Reads all JSON files inside raw_dir and extracts comment texts.
-
-    Args:
-        raw_dir: Directory containing raw JSON files.
-        comment_key: The key name that contains comment text.
-
-    Returns:
-        A list of comment strings.
+    Parse JSON berisi tweet / komentar menjadi list teks mentah,
+    kemudian simpan hasil ke pickle (.pkl).
     """
-    raw_dir = Path(raw_dir)
-    all_comments = []
+    input_path = Path(input_json_path)
+    output_path = Path(output_pkl_path)
 
-    if not raw_dir.exists() or not raw_dir.is_dir():
-        logging.error(f"Input directory not found: {raw_dir}")
+    if not input_path.exists():
+        logging.error(f"❌ File tidak ditemukan: {input_path}")
         return []
 
-    json_files = list(raw_dir.glob("*.json"))
-    if not json_files:
-        logging.warning(f"No JSON files found in {raw_dir}")
+    try:
+        with open(input_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as e:
+        logging.error(f"❌ Gagal membaca file JSON: {e}")
         return []
 
-    logging.info(f"Found {len(json_files)} JSON files in {raw_dir}")
+    texts: List[str] = []
 
-    for file in json_files:
-        try:
-            with file.open("r", encoding="utf-8") as f:
-                data = json.load(f)
+    # JSON bisa berupa list atau dict
+    if isinstance(data, dict):
+        data = [data]
 
-            # Case 1: List of dictionaries
-            if isinstance(data, list):
-                for item in data:
-                    if isinstance(item, dict):
-                        text = item.get(comment_key)
-                        if isinstance(text, str) and text.strip():
-                            all_comments.append(text.strip())
+    for item in data:
+        if isinstance(item, dict):
+            for key in TEXT_KEYS:
+                if key in item and isinstance(item[key], str):
+                    texts.append(item[key].strip())
+                    break
+        elif isinstance(item, str):
+            texts.append(item.strip())
 
-            # Case 2: Single dictionary
-            elif isinstance(data, dict):
-                text = data.get(comment_key)
-                if isinstance(text, str) and text.strip():
-                    all_comments.append(text.strip())
+    if not texts:
+        logging.warning(f"⚠️ Tidak ditemukan kolom teks dari {input_json_path}")
+    else:
+        logging.info(f"✅ Berhasil parse {len(texts)} teks.")
+        logging.info(f"🧩 Contoh pertama: {texts[0][:80]}...")
 
-            else:
-                logging.warning(f"Unsupported JSON structure in {file.name}")
+    # Simpan hasil ke .pkl
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        joblib.dump(texts, output_path)
+        logging.info(f"💾 Disimpan ke {output_path}")
+    except Exception as e:
+        logging.error(f"❌ Gagal menyimpan hasil ke {output_path}: {e}")
 
-        except json.JSONDecodeError:
-            logging.error(f"JSON format error in file: {file.name}")
-        except Exception as e:
-            logging.error(f"Error processing {file.name}: {e}")
+    return texts
 
-    logging.info(f"Parsing completed. Extracted {len(all_comments)} comments.")
-    return all_comments
-
-
-# ============================================================
-#  Main Runner (if standalone execution)
-# ============================================================
 
 if __name__ == "__main__":
-    BASE_DIR = Path(__file__).resolve().parents[1]
-    RAW_DATA_DIR = BASE_DIR / "data" / "raw"
-    PROCESSED_DIR = BASE_DIR / "data" / "processed"
-    OUTPUT_PKL = PROCESSED_DIR / "parsed_comments.pkl"
-
-    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-
-    comments = parse_raw_json(RAW_DATA_DIR, comment_key="comment_text")
-
-    if comments:
-        joblib.dump(comments, OUTPUT_PKL)
-        logging.info(f"✅ Parsed comments saved to: {OUTPUT_PKL}")
-    else:
-        logging.warning("⚠️ No comments extracted; output file not created.")
+    parse_json("data/raw/sample.json")
