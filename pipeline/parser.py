@@ -2,66 +2,91 @@ import json
 import joblib
 import logging
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, Optional
 
-# Setup logging
+# -------------------------------------------------
+# Logging Configuration
+# -------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-TEXT_KEYS = ["full_text", "text", "content", "comment", "body", "message"]
-
-def parse_json(input_json_path: str, output_pkl_path: str = "data/processed/parsed_comments.pkl") -> List[str]:
+# -------------------------------------------------
+# JSON Parser Class
+# -------------------------------------------------
+class JSONParser:
     """
-    Parse JSON berisi tweet / komentar menjadi list teks mentah,
-    kemudian simpan hasil ke pickle (.pkl).
+    Parser untuk file JSON berisi tweet, komentar, atau dokumen teks.
+    Mengambil kolom teks utama lalu menyimpannya sebagai .pkl.
     """
-    input_path = Path(input_json_path)
-    output_path = Path(output_pkl_path)
 
-    if not input_path.exists():
-        logging.error(f"❌ File tidak ditemukan: {input_path}")
-        return []
+    TEXT_KEYS = ["full_text", "text", "content", "comment", "body", "message"]
 
-    try:
-        with open(input_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except Exception as e:
-        logging.error(f"❌ Gagal membaca file JSON: {e}")
-        return []
+    def __init__(self, input_json: Union[str, Path], output_pkl: Optional[Union[str, Path]] = None):
+        self.input_path = Path(input_json)
+        self.output_path = Path(output_pkl) if output_pkl else Path("data/processed/parsed_comments.pkl")
 
-    texts: List[str] = []
+    def _load_json(self) -> Union[List, dict, None]:
+        """Membaca file JSON mentah."""
+        if not self.input_path.exists():
+            logging.error(f"❌ File tidak ditemukan: {self.input_path}")
+            return None
 
-    # JSON bisa berupa list atau dict
-    if isinstance(data, dict):
-        data = [data]
+        try:
+            with open(self.input_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logging.error(f"❌ Gagal membaca JSON: {e}")
+            return None
 
-    for item in data:
-        if isinstance(item, dict):
-            for key in TEXT_KEYS:
-                if key in item and isinstance(item[key], str):
-                    texts.append(item[key].strip())
-                    break
-        elif isinstance(item, str):
-            texts.append(item.strip())
+    def _extract_texts(self, data: Union[List, dict]) -> List[str]:
+        """Menarik teks dari berbagai kemungkinan struktur JSON."""
+        texts: List[str] = []
 
-    if not texts:
-        logging.warning(f"⚠️ Tidak ditemukan kolom teks dari {input_json_path}")
-    else:
-        logging.info(f"✅ Berhasil parse {len(texts)} teks.")
-        logging.info(f"🧩 Contoh pertama: {texts[0][:80]}...")
+        # JSON bisa berupa dict tunggal atau list of dicts
+        if isinstance(data, dict):
+            data = [data]
 
-    # Simpan hasil ke .pkl
-    try:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        joblib.dump(texts, output_path)
-        logging.info(f"💾 Disimpan ke {output_path}")
-    except Exception as e:
-        logging.error(f"❌ Gagal menyimpan hasil ke {output_path}: {e}")
+        for item in data:
+            if isinstance(item, dict):
+                for key in self.TEXT_KEYS:
+                    if key in item and isinstance(item[key], str):
+                        texts.append(item[key].strip())
+                        break
+            elif isinstance(item, str):
+                texts.append(item.strip())
 
-    return texts
+        return texts
+
+    def parse(self) -> List[str]:
+        """Menjalankan parsing penuh (baca JSON → ekstrak teks → simpan pkl)."""
+        data = self._load_json()
+        if data is None:
+            return []
+
+        texts = self._extract_texts(data)
+
+        if not texts:
+            logging.warning(f"⚠️ Tidak ditemukan kolom teks dari {self.input_path}")
+        else:
+            logging.info(f"✅ Berhasil parse {len(texts)} teks.")
+            logging.info(f"🧩 Contoh pertama: {texts[0][:80]}...")
+
+        # Simpan hasil ke .pkl
+        try:
+            self.output_path.parent.mkdir(parents=True, exist_ok=True)
+            joblib.dump(texts, self.output_path)
+            logging.info(f"💾 Disimpan ke {self.output_path}")
+        except Exception as e:
+            logging.error(f"❌ Gagal menyimpan hasil ke {self.output_path}: {e}")
+
+        return texts
 
 
+# -------------------------------------------------
+# Script Entry Point (manual run)
+# -------------------------------------------------
 if __name__ == "__main__":
-    parse_json("data/raw/sample.json")
+    parser = JSONParser("data/raw/sample.json")
+    parser.parse()
