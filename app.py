@@ -15,7 +15,7 @@ from models.sentiment_mapper import SentimentEngine
 # === Konfigurasi Streamlit ===
 st.set_page_config(page_title="Sentiment Cluster Dashboard", layout="wide")
 
-st.title("🧠 Sentiment Cluster Analyzer")
+st.title("Sentiment Cluster Analyzer")
 st.write("Unggah file JSON hasil scraping dan jalankan analisis sentimen + klustering secara otomatis.")
 
 # === Sidebar ===
@@ -56,9 +56,11 @@ def run_full_pipeline(json_path: str, method: str, k: int) -> pd.DataFrame:
         return pd.DataFrame()
 
     # --- EMBEDDING & SENTIMEN ---
-    st.info("🔠 Membuat embeddings & sentimen (dummy training)...")
+        st.info("🔠 Membuat embeddings & sentimen (dummy training)...")
     sentiment_engine = SentimentEngine()
-    dummy_labels = np.random.randint(0, 3, len(docs))  # sementara
+
+    # Dummy label untuk pelatihan awal (sementara)
+    dummy_labels = np.random.randint(0, 3, len(docs))
     sentiment_engine.prepare_and_train(docs, dummy_labels)
     vectors = sentiment_engine.embedding_model.transform(docs)
 
@@ -73,10 +75,19 @@ def run_full_pipeline(json_path: str, method: str, k: int) -> pd.DataFrame:
         model.fit(vectors)
         labels = model.predict(vectors)
 
+    # --- MAP LABEL KE SENTIMEN ---
+    SENTIMENT_MAP = {0: "Negatif", 1: "Netral", 2: "Positif"}
+
     df = pd.DataFrame({
         "text": docs,
-        "cluster": labels
+        "cluster": labels,
     })
+    df["sentiment_label"] = df["cluster"].map(SENTIMENT_MAP).fillna("Tidak diketahui")
+
+    # --- METADATA TAMBAHAN UNTUK VISUALISASI ---
+    np.random.seed(42)
+    df["x"] = np.random.randn(len(df))
+    df["y"] = np.random.randn(len(df))
 
     return df
 
@@ -95,14 +106,14 @@ if run_button and uploaded_file:
         st.success("✅ Analisis selesai!")
 
         # --- METRICS ---
-        st.subheader("📊 Ringkasan Hasil Analisis")
+        st.subheader("Ringkasan Hasil Analisis")
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Komentar", len(df_result))
         col2.metric("Jumlah Cluster", df_result["cluster"].nunique())
         col3.metric("Cluster Dominan", int(df_result["cluster"].mode()[0]))
 
         # --- PIE CHART ---
-        st.subheader("🎯 Distribusi Sentimen (0=Negatif, 1=Netral, 2=Positif)")
+        st.subheader("Distribusi Sentimen (0=Negatif, 1=Netral, 2=Positif)")
         sentiment_counts = df_result["cluster"].value_counts().reset_index()
         sentiment_counts.columns = ["Cluster", "Jumlah"]
         fig_pie = px.pie(sentiment_counts, values="Jumlah", names="Cluster",
@@ -110,7 +121,7 @@ if run_button and uploaded_file:
         st.plotly_chart(fig_pie, use_container_width=True)
 
         # --- SCATTER PLOT ---
-        st.subheader("🌈 Visualisasi Klaster")
+        st.subheader("Visualisasi Klaster")
         np.random.seed(42)
         df_result["x"] = np.random.randn(len(df_result))
         df_result["y"] = np.random.randn(len(df_result))
