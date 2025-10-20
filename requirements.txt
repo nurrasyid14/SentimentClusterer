@@ -1,0 +1,27 @@
+# Core
+numpy
+pandas
+scikit-learn
+scikit-fuzzy
+kmodes
+
+# Text Processing
+nltk
+spacy
+gensim
+
+# Web Scraping
+requests
+beautifulsoup4
+lxml
+
+# Visualization
+plotly
+matplotlib
+
+# Web App
+streamlit
+
+# Utilities
+tqdm
+python-dotenv
