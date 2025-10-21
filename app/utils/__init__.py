@@ -1,3 +1,4 @@
+#app/utils/__init__.py
 """
 Utility functions for Streamlit UI (app layer).
 """

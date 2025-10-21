@@ -18,11 +18,13 @@ lxml
 
 # Visualization
 plotly
-matplotlib
-
+plotly-express
 # Web App
 streamlit
 
 # Utilities
 tqdm
 python-dotenv
+tensorflow
+keras
+joblib
