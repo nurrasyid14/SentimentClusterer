@@ -134,3 +134,13 @@ class SentimentEngine:
             X = self.embedding_model.transform(tokenized)
 
         return self.model.predict_proba(X)
+
+    def get_embeddings(self, texts: List[str]) -> np.ndarray:
+        """
+        Return embeddings for visualization (PCA or other projection).
+        For lexicon method, returns empty array.
+        """
+        if self.method == "lexicon":
+            logging.warning("Lexicon method has no embeddings. Returning empty array.")
+            return np.zeros((len(texts), 0))
+        return self.embedding_model.transform(texts)
