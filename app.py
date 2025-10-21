@@ -13,7 +13,7 @@ from collections import Counter
 # Internal modules
 from pipeline.parser import JSONParser
 from pipeline.preprocess import run_preprocess
-from models.sentiment_mapper import SentimentEngine
+from models.sentiment_machine.sentiment_mapper import SentimentEngine
 
 # ---------------------------
 # Streamlit configuration
