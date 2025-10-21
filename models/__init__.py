@@ -19,7 +19,7 @@ from .sentiment_machine.deeplearning import DLSentimentAnalyzer
 from .sentiment_machine.ml_methods import MLSentimentAnalyzer
 from .sentiment_machine.lexicon_methods import LexiconSentimentAnalyzer
 from .sentiment_machine.ensemble_sentiment import EnsembleSentimentAnalyzer
-from .sentiment_machine.sentiment_engine import SentimentEngine, EmbeddingModel, ClassifierModel
+from .sentiment_machine.sentiment_mapper import SentimentEngine
 
 __all__ = [
     # Utils
