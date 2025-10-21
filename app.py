@@ -1,148 +1,148 @@
 # app.py
 
 import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
+from pathlib import Path
 import tempfile
 import joblib
-from pathlib import Path
-from collections import Counter
+import numpy as np
+import pandas as pd
+import plotly.express as px
 from sklearn.decomposition import PCA
+from collections import Counter
 
-# === Internal modules ===
+# Internal modules
 from pipeline.parser import JSONParser
 from pipeline.preprocess import run_preprocess
-from models.sentiment_machine.sentiment_mapper import SentimentEngine
+from models.sentiment_mapper import SentimentEngine
 
-# === Streamlit config ===
-st.set_page_config(page_title="Sentiment Analyzer Dashboard", layout="wide")
-st.title("Sentiment Analyzer Dashboard")
-st.write("Unggah file JSON dan jalankan analisis sentimen menggunakan Lexicon, ML, atau Deep Learning.")
+# ---------------------------
+# Streamlit configuration
+# ---------------------------
+st.set_page_config(page_title="Sentiment Dashboard", layout="wide")
+st.title("📊 Sentiment Analyzer Dashboard")
+st.write("Unggah file JSON, pilih metode analisis sentimen, dan lihat hasil visualisasi.")
 
-# === Sidebar ===
+# Sidebar: user settings
 st.sidebar.header("⚙️ Pengaturan Analisis")
-sentiment_method = st.sidebar.selectbox("Metode Analisis Sentimen", ["Lexicon", "ML", "Deep"])
+method = st.sidebar.selectbox("Metode Analisis Sentimen", ["lexicon", "ml", "deep"])
 run_button = st.sidebar.button("🚀 Jalankan Analisis")
 
-# === File uploader ===
+# File uploader
 uploaded_file = st.file_uploader("Unggah file JSON hasil scraping", type=["json"])
-
 data_dir = Path("data/processed")
 data_dir.mkdir(parents=True, exist_ok=True)
 
-# ====================================================
-# 🚀 FULL PIPELINE
-# ====================================================
-def run_pipeline(json_path: str, method: str):
+# ---------------------------
+# Full pipeline
+# ---------------------------
+def run_pipeline(json_path: str, method: str) -> pd.DataFrame:
+    # --- Parsing ---
     st.info("📥 Parsing JSON...")
     parser = JSONParser(json_path, data_dir / "parsed_comments.pkl")
     parsed_comments = parser.parse()
+
     if not parsed_comments:
-        st.error("❌ Tidak ada teks yang berhasil diparse dari file JSON.")
+        st.error("❌ Tidak ada teks yang berhasil diparse.")
         return pd.DataFrame()
 
-    st.info("🧹 Preprocessing teks...")
+    # --- Preprocessing ---
+    st.info("🧹 Membersihkan dan men-tokenisasi teks...")
     tokens_path = data_dir / "tokens.pkl"
     run_preprocess(str(parser.output_path), str(tokens_path))
     all_tokens = joblib.load(tokens_path)
     docs = [" ".join(toks) for toks in all_tokens if toks]
 
     if not docs:
-        st.error("❌ Tidak ada teks valid setelah preprocessing.")
+        st.error("❌ Tidak ada teks yang bisa digunakan setelah preprocessing.")
         return pd.DataFrame()
 
-    st.info("🔠 Analisis Sentimen...")
-    sentiment_engine = SentimentEngine(method=method.lower())
+    # --- Sentiment Analysis ---
+    st.info(f"🔠 Menjalankan Sentiment Analysis ({method.upper()})...")
+    engine = SentimentEngine(method=method)
 
-    # Dummy labels for ML/Deep training if necessary
-    if method.lower() in ["ml", "deep"]:
+    if method in ["ml", "deep"]:
+        # Dummy labels for training placeholder
         dummy_labels = np.random.randint(0, 3, len(docs))
-        sentiment_engine.prepare_and_train(docs, dummy_labels)
+        engine.prepare_and_train(docs, dummy_labels)
 
-    # Predict sentiment
-    labels = sentiment_engine.predict(docs)
-    SENTIMENT_MAP = {0: "Negatif", 1: "Netral", 2: "Positif"}
+    sentiments = engine.predict(docs)
+
+    # --- Embeddings + PCA ---
+    embeddings = engine.get_embeddings(docs)
+    if embeddings.shape[1] > 2:
+        pca = PCA(n_components=2)
+        proj = pca.fit_transform(embeddings)
+    elif embeddings.shape[1] == 2:
+        proj = embeddings
+    else:
+        # For lexicon or empty embeddings
+        proj = np.random.randn(len(docs), 2)
 
     df = pd.DataFrame({
         "text": docs,
-        "sentiment_label": [SENTIMENT_MAP.get(l, "Tidak diketahui") for l in labels]
+        "sentiment": sentiments,
+        "x": proj[:, 0],
+        "y": proj[:, 1],
     })
-
-    # PCA for embedding projection (only ML/Deep)
-    if method.lower() in ["ml", "deep"]:
-        st.info("📊 Menghitung PCA untuk visualisasi...")
-        if method.lower() == "ml":
-            X = sentiment_engine.vectorizer.transform([t.split() for t in docs])
-        else:
-            X = sentiment_engine.embedding_model.transform([t.split() for t in docs])
-        pca = PCA(n_components=2, random_state=42)
-        X_proj = pca.fit_transform(X)
-        df["x"] = X_proj[:, 0]
-        df["y"] = X_proj[:, 1]
-    else:
-        # Lexicon: random 2D projection
-        np.random.seed(42)
-        df["x"] = np.random.randn(len(df))
-        df["y"] = np.random.randn(len(df))
 
     return df
 
-# ====================================================
-# 🚦 Streamlit Execution
-# ====================================================
+# ---------------------------
+# Streamlit execution
+# ---------------------------
 if run_button and uploaded_file:
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as tmp:
         tmp.write(uploaded_file.read())
         tmp_path = tmp.name
 
     with st.spinner("🚧 Pipeline sedang berjalan..."):
-        df_result = run_pipeline(tmp_path, sentiment_method)
+        df_result = run_pipeline(tmp_path, method)
 
     if not df_result.empty:
         st.success("✅ Analisis selesai!")
 
-        # --- METRICS ---
-        st.subheader("Ringkasan Sentimen")
-        sentiment_counts = df_result["sentiment_label"].value_counts().reindex(["Negatif","Netral","Positif"], fill_value=0)
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Komentar", len(df_result))
-        col2.metric("Komentar Positif", sentiment_counts["Positif"])
-        col3.metric("Komentar Negatif", sentiment_counts["Negatif"])
+        # --- Sentiment summary ---
+        st.subheader("📊 Ringkasan Sentimen")
+        counts = df_result["sentiment"].value_counts().sort_index()
+        sentiment_map = {0: "Negatif", 1: "Netral", 2: "Positif"}
+        counts.index = counts.index.map(sentiment_map)
 
-        # --- PIE CHART ---
-        st.subheader("Distribusi Sentimen")
-        fig_pie = px.pie(
-            sentiment_counts.reset_index().rename(columns={"index":"Sentimen","sentiment_label":"Jumlah"}),
-            values="sentiment_label", names="Sentimen",
-            color="Sentimen", color_discrete_sequence=px.colors.qualitative.Pastel
+        fig_bar = px.bar(
+            counts.reset_index(),
+            x="index",
+            y="sentiment",
+            text_auto=True,
+            title="Jumlah Komentar per Sentimen",
+            labels={"index": "Sentimen", "sentiment": "Jumlah"}
         )
-        st.plotly_chart(fig_pie, use_container_width=True)
+        st.plotly_chart(fig_bar, use_container_width=True)
 
-        # --- SCATTER PCA ---
-        st.subheader("Visualisasi 2D Teks")
+        # --- Top keywords per sentiment ---
+        st.subheader("🔑 Kata Kunci Populer per Sentimen")
+        for s in sorted(df_result["sentiment"].unique()):
+            s_label = sentiment_map.get(s, str(s))
+            texts_s = df_result[df_result["sentiment"] == s]["text"]
+            words = [w for t in texts_s for w in t.split() if len(w) > 2]
+            most_common = Counter(words).most_common(10)
+            st.write(f"**{s_label}:**")
+            st.write(", ".join([w for w, _ in most_common]))
+
+        # --- PCA scatter plot ---
+        st.subheader("📍 Visualisasi Teks (PCA Projection)")
         fig_scatter = px.scatter(
             df_result, x="x", y="y",
-            color="sentiment_label",
+            color=df_result["sentiment"].map(sentiment_map),
             hover_data=["text"],
-            title="Peta Sentimen Teks"
+            title="PCA Projection of Comments by Sentiment",
+            color_discrete_sequence=px.colors.qualitative.Pastel
         )
         st.plotly_chart(fig_scatter, use_container_width=True)
 
-        # --- TOP KEYWORDS PER SENTIMENT ---
-        st.subheader("🔑 Kata Kunci Populer")
-        for s in ["Positif","Netral","Negatif"]:
-            st.markdown(f"**{s}**")
-            texts_s = " ".join(df_result[df_result["sentiment_label"]==s]["text"].tolist())
-            words = [w for w in texts_s.lower().split() if len(w)>2]
-            top_words = [w for w, _ in Counter(words).most_common(10)]
-            st.write(", ".join(top_words))
-
-        # --- DATA TABLE ---
-        st.subheader("📜 Detail Data")
-        st.dataframe(df_result.head(20), use_container_width=True)
-
+        # --- Data table ---
+        st.subheader("📜 Data Detail")
+        st.dataframe(df_result.head(50), use_container_width=True)
     else:
-        st.error("❌ Pipeline gagal, tidak ada data valid.")
+        st.error("❌ Pipeline gagal dijalankan, tidak ada data yang valid.")
+
 else:
-    st.warning("👆 Unggah file JSON dan tekan **Jalankan Analisis** untuk memulai.")
+    st.info("👆 Unggah file JSON dan tekan **Jalankan Analisis** untuk memulai.")
