@@ -1,4 +1,4 @@
-# models/__init__.py
+# models/sentiment_machine/__init__.py
 """
 Models package for sentiment analysis.
 Includes Deep Learning, ML, Lexicon, Ensemble, and utility modules.

@@ -1,4 +1,4 @@
-#app/__init__.py
+#app/pages/__init__.py
 """
 App package for Streamlit UI layer.
 Contains dashboard modules and Streamlit utilities.
