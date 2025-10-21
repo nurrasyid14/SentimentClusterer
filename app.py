@@ -67,25 +67,68 @@ def run_pipeline(json_path: str, method: str) -> pd.DataFrame:
 
     sentiments = engine.predict(docs)
 
-    # --- Embeddings + PCA ---
+
+    # --- Embeddings + PCA for projection ---
     embeddings = engine.get_embeddings(docs)
     if embeddings.shape[1] > 2:
         pca = PCA(n_components=2)
         proj = pca.fit_transform(embeddings)
-    elif embeddings.shape[1] == 2:
-        proj = embeddings
     else:
-        # For lexicon or empty embeddings
-        proj = np.random.randn(len(docs), 2)
+        proj = embeddings
 
-    df = pd.DataFrame({
+    df_result = pd.DataFrame({
         "text": docs,
         "sentiment": sentiments,
-        "x": proj[:, 0],
-        "y": proj[:, 1],
+        "x": proj[:, 0] if proj.shape[1] > 0 else [0]*len(docs),
+        "y": proj[:, 1] if proj.shape[1] > 1 else [0]*len(docs)
     })
 
-    return df
+    # --- Sentiment distribution ---
+    sentiment_counts = df_result["sentiment"].value_counts().reset_index()
+    sentiment_counts.columns = ["sentiment", "count"]
+
+    # Bar chart
+    fig_bar = px.bar(
+        sentiment_counts,
+        x="sentiment",
+        y="count",
+        color="sentiment",
+        text="count",
+        title="Distribusi Sentimen"
+    )
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+    # Pie chart
+    fig_pie = px.pie(
+        sentiment_counts,
+        values="count",
+        names="sentiment",
+        color="sentiment",
+        color_discrete_sequence=px.colors.qualitative.Pastel,
+        title="Distribusi Sentimen (Pie Chart)"
+    )
+    st.plotly_chart(fig_pie, use_container_width=True)
+
+    # --- PCA scatter plot ---
+    fig_scatter = px.scatter(
+        df_result,
+        x="x",
+        y="y",
+        color="sentiment",
+        hover_data=["text"],
+        title="Peta Sentimen (PCA Projection)",
+        color_discrete_sequence=px.colors.qualitative.Set1
+    )
+    st.plotly_chart(fig_scatter, use_container_width=True)
+
+    # --- Kata kunci populer per sentimen ---
+    st.subheader("Kata Kunci Populer per Sentimen")
+    for sent in df_result["sentiment"].unique():
+        texts = df_result[df_result["sentiment"] == sent]["text"].tolist()
+        all_words = [w.lower() for t in texts for w in t.split() if len(w) > 2]
+        top_words = Counter(all_words).most_common(10)
+        st.write(f"**{sent}**: ", ", ".join([w for w, _ in top_words]))
+
 
 # ---------------------------
 # Streamlit execution
