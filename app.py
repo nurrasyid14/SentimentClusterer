@@ -12,7 +12,7 @@ from sklearn.decomposition import PCA
 # === Internal modules ===
 from pipeline.parser import JSONParser
 from pipeline.preprocess import run_preprocess
-from models.sentiment_mapper import SentimentEngine
+from models.sentiment_machine.sentiment_engine import SentimentEngine
 
 # === Streamlit configuration ===
 st.set_page_config(page_title="Sentiment Dashboard", layout="wide")
