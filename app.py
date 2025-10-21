@@ -13,7 +13,7 @@ import plotly.express as px
 # === Internal modules ===
 from pipeline.parser import JSONParser
 from pipeline.preprocess import run_preprocess
-from models.sentiment_mapper import SentimentEngine
+from models.sentiment_machine.sentiment_mapper import SentimentEngine
 
 # === Streamlit config ===
 st.set_page_config(page_title="Sentiment Analyzer Dashboard", layout="wide")
